@@ -737,6 +737,7 @@ const sourceOptions = computed(() => [
   { label: t('knowledgeBase.channelConfluence'), value: 'confluence' },
   { label: t('knowledgeBase.channelGitLab'), value: 'gitlab' },
   { label: t('knowledgeBase.channelSeafile'), value: 'seafile' },
+  { label: t('knowledgeBase.channelNextcloud'), value: 'nextcloud' },
   { label: t('knowledgeBase.channelIma'), value: 'ima' },
   { label: t('knowledgeBase.channelWechat'), value: 'wechat' },
   { label: t('knowledgeBase.channelWecom'), value: 'wecom' },
@@ -850,12 +851,14 @@ const isFiltering = computed(() =>
 );
 // A row's folder is worth showing only when the list can span folders.
 const showDocumentFolderPath = computed(() => hasFolders.value && isFiltering.value);
-// Browsing a folder lists its direct sub-folders as entries, the way a file
-// manager does. Filtering returns matching documents from the whole subtree,
-// so folder entries would be noise there.
-const visibleSubFolders = computed(() =>
-  isFiltering.value ? [] : childFolders(folderTree.value, selectedFolderPath.value),
-);
+// Folders belong in the sidebar tree. The document pane only lists them when
+// that tree is collapsed, so navigation still works. Filtering already returns
+// matching documents from the whole subtree, so folder entries would be noise.
+const visibleSubFolders = computed(() => {
+  if (isFiltering.value) return []
+  if (showFolderTree.value && !folderTreeCollapsed.value) return []
+  return childFolders(folderTree.value, selectedFolderPath.value)
+});
 const folderBreadcrumbs = computed(() => buildFolderBreadcrumbs(selectedFolderPath.value));
 // What the breadcrumb reports is the folder's own contents the way a file
 // manager counts them: the documents this list can show plus its direct
@@ -2526,7 +2529,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
       </div>
 
       <!-- Image Gallery (4th tab) -->
-      <ImageGallery v-if="activeKbTab === 'gallery' && kbId" :knowledge-base-id="kbId" @open-source-doc="openSourceDoc" />
+      <ImageGallery v-if="activeKbTab === 'gallery' && kbId" :knowledge-base-id="kbId" :can-edit="canEdit" @open-source-doc="openSourceDoc" />
 
       <!-- wiki/graph tabs only exist on wiki KBs; a stale tab (?tab= or one
            carried over from a previous KB) falls back to documents. -->
@@ -3609,7 +3612,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
   background: var(--td-bg-color-container);
   position: relative;
   cursor: pointer;
-  transition: border-color var(--app-motion-base) ease, box-shadow var(--app-motion-base) ease, background-color var(--app-motion-base) ease;
+  transition: background-color var(--app-motion-base) ease;
 
   .card-content {
     flex: 1;
@@ -3644,8 +3647,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
 }
 
 .knowledge-card:hover {
-  border-color: color-mix(in srgb, var(--td-component-stroke) 55%, var(--td-brand-color));
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  background: var(--td-bg-color-container-hover);
 }
 
 </style>
